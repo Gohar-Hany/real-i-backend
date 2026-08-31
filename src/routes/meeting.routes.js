@@ -846,16 +846,20 @@ router.post('/attendance/join', authenticate, async (req, res) => {
       });
     }
 
+    const validRoles = ['superadmin', 'admin', 'moderator', 'instructor', 'student', 'guest'];
+    const safeRole = validRoles.includes(req.user.role) ? req.user.role : 'student';
+
     const existingIndex = meeting.attendance.findIndex(a => a.participantId === participantId);
     if (existingIndex > -1) {
       meeting.attendance[existingIndex].status = 'present';
+      meeting.attendance[existingIndex].role = safeRole;
       meeting.attendance[existingIndex].leaveTime = null;
     } else {
       meeting.attendance.push({
         participantId,
         name,
         email: email || `${participantId}@student.reali.com`,
-        role: role || 'student',
+        role: safeRole,
         joinTime: new Date(),
         status: 'present'
       });
