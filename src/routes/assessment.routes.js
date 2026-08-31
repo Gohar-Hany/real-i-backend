@@ -103,6 +103,34 @@ router.get('/student/me', authenticate, async (req, res) => {
   }
 });
 
+// ── GET /student/:studentId — Admin/Superadmin view specific student submissions ──
+router.get('/student/:studentId', authenticate, async (req, res) => {
+  try {
+    const isElevated = ['superadmin', 'admin'].includes(req.user.role);
+    if (!isElevated && req.user._id.toString() !== req.params.studentId) {
+      return res.status(403).json({ detail: 'Admin access required to view student submissions' });
+    }
+
+    const submissions = await Submission.find({
+      student_id: req.params.studentId,
+    }).sort({ submitted_at: -1 });
+
+    const assessmentIds = [...new Set(submissions.map(s => s.assessment_id))];
+    const assessments = await Assessment.find({ _id: { $in: assessmentIds } });
+    const assessmentMap = {};
+    assessments.forEach(a => { assessmentMap[a._id.toString()] = a.toJSON(); });
+
+    const enriched = submissions.map(s => ({
+      ...s.toJSON(),
+      assessment: assessmentMap[s.assessment_id.toString()] || null,
+    }));
+
+    res.json(enriched);
+  } catch (err) {
+    res.status(500).json({ detail: err.message });
+  }
+});
+
 // ── GET /:id — Get single assessment ─────────────────────────
 router.get('/:id', authenticate, async (req, res) => {
   try {
