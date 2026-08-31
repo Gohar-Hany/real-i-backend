@@ -196,16 +196,35 @@ router.get('/:id', authenticate, async (req, res) => {
 // ── POST /authorize-join — Gatekeeper Authorization for Classroom Entry ───────
 router.post('/authorize-join', authenticate, async (req, res) => {
   try {
-    const { meetingId, roomSlug, roomName } = req.body;
-    
+    const rawMeetingId = req.body.meetingId;
+    const rawRoomSlug = req.body.roomSlug;
+    const rawRoomName = req.body.roomName;
+
+    const meetingId = (rawMeetingId && rawMeetingId !== 'undefined' && rawMeetingId !== 'null') ? rawMeetingId : null;
+    const roomSlug = (rawRoomSlug && rawRoomSlug !== 'undefined' && rawRoomSlug !== 'null') ? rawRoomSlug : null;
+    const roomName = (rawRoomName && rawRoomName !== 'undefined' && rawRoomName !== 'null') ? rawRoomName : null;
+
+    const queryOr = [];
+    if (meetingId && /^[0-9a-fA-F]{24}$/.test(meetingId)) {
+      queryOr.push({ _id: meetingId });
+    }
+    if (roomSlug) {
+      queryOr.push({ roomSlug });
+    }
+    if (roomName) {
+      queryOr.push({ roomName });
+    }
+
+    if (queryOr.length === 0) {
+      return res.status(400).json({
+        success: false,
+        authorized: false,
+        message: 'Invalid or missing meeting identifier.'
+      });
+    }
+
     // Find meeting by ID or roomSlug
-    const meeting = await Meeting.findOne({
-      $or: [
-        { _id: meetingId && meetingId.match(/^[0-9a-fA-F]{24}$/) ? meetingId : null },
-        { roomSlug: roomSlug || meetingId },
-        { roomName: roomName || meetingId }
-      ]
-    });
+    let meeting = await Meeting.findOne({ $or: queryOr });
 
     if (!meeting) {
       return res.status(404).json({
@@ -215,7 +234,12 @@ router.post('/authorize-join', authenticate, async (req, res) => {
       });
     }
 
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'instructor';
+    if (!meeting.roomSlug) {
+      meeting.roomSlug = `reali_cls_${meeting._id.toString().slice(-8)}`;
+      await meeting.save();
+    }
+
+    const isAdmin = ['superadmin', 'admin', 'instructor'].includes(req.user.role);
     
     // Student Access Verification
     if (!isAdmin) {
