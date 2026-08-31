@@ -107,7 +107,7 @@ router.get('/:id/results', authenticate, requireAdmin, async (req, res) => {
 // ── POST /:id/lessons/:lessonId/toggle — Toggle lesson completion
 router.post('/:id/lessons/:lessonId/toggle', authenticate, async (req, res) => {
   try {
-    if (req.params.id !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (req.params.id !== req.user._id.toString() && !['admin', 'superadmin'].includes(req.user.role)) {
       return res.status(403).json({ detail: 'Cannot update another user\'s progress' });
     }
 

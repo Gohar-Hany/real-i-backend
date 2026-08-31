@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
       try {
         const jwt = await import('jsonwebtoken');
         const decoded = jwt.default.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
-        if (decoded.role === 'admin') isAdmin = true;
+        if (['admin', 'superadmin'].includes(decoded.role)) isAdmin = true;
       } catch { /* not admin */ }
     }
 
