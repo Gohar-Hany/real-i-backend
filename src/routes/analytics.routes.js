@@ -80,20 +80,34 @@ router.get('/students', authenticate, requireAdmin, async (req, res) => {
 
     const studentMap = {};
     submissions.forEach(s => {
-      if (!studentMap[s.student_id]) {
-        studentMap[s.student_id] = { total: 0, sum: 0, count: 0 };
+      const sId = s.student_id ? s.student_id.toString() : '';
+      if (!sId) return;
+      if (!studentMap[sId]) {
+        studentMap[sId] = { total: 0, sum: 0, count: 0, best: 0, passed: 0 };
       }
-      studentMap[s.student_id].total++;
-      studentMap[s.student_id].sum += s.percentage;
-      studentMap[s.student_id].count++;
+      studentMap[sId].total++;
+      studentMap[sId].sum += s.percentage;
+      studentMap[sId].count++;
+      if (s.percentage > studentMap[sId].best) {
+        studentMap[sId].best = s.percentage;
+      }
+      if (s.percentage >= 60) {
+        studentMap[sId].passed++;
+      }
     });
 
     const result = students.map(s => {
-      const data = studentMap[s._id.toString()] || { total: 0, sum: 0, count: 0 };
+      const sId = s._id ? s._id.toString() : (s.id ? s.id.toString() : '');
+      const data = studentMap[sId] || { total: 0, sum: 0, count: 0, best: 0, passed: 0 };
+      const avg = data.count > 0 ? Math.round(data.sum / data.count) : 0;
+      const passRate = data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0;
+
       return {
         ...s.toJSON(),
         quizzes_taken: data.total,
-        avg_score: data.count > 0 ? Math.round(data.sum / data.count) : 0,
+        avg_score: avg,
+        best_score: data.best,
+        pass_rate: passRate,
       };
     });
 
