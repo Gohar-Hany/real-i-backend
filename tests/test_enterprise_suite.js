@@ -1,7 +1,7 @@
-const BASE_URL = 'http://localhost:4000/api/v1';
+const BASE_URL = process.env.API_URL || 'http://localhost:4000/api/v1';
 
 let adminToken = '';
-let superAdminEmail = 'goharhany@gmail.com';
+let superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'goharhany@gmail.com';
 let studentAToken = '';
 let studentAId = '';
 let studentBToken = '';

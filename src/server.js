@@ -20,6 +20,9 @@ import meetingRoutes from './routes/meeting.routes.js';
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// Trust reverse proxy headers (Railway / Vercel / Cloudflare)
+app.set('trust proxy', 1);
+
 // ── Security & Middleware ────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },

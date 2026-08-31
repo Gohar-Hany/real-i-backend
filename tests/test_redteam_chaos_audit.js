@@ -17,7 +17,7 @@
 
 import jwt from 'jsonwebtoken';
 
-const BASE_URL = 'http://localhost:4000/api/v1';
+const BASE_URL = process.env.API_URL || 'http://localhost:4000/api/v1';
 
 let totalAttacks = 0;
 let defendedAttacks = 0;

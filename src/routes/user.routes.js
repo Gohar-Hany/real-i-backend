@@ -63,8 +63,8 @@ router.put('/:id/role', authenticate, requireSuperAdmin, async (req, res) => {
 // ── PUT /:id/profile — Update own profile ────────────────────
 router.put('/:id/profile', authenticate, async (req, res) => {
   try {
-    // Users can only update their own profile
-    if (req.params.id !== req.user._id.toString() && req.user.role !== 'admin') {
+    // Users can only update their own profile, unless elevated admin
+    if (req.params.id !== req.user._id.toString() && !['superadmin', 'admin'].includes(req.user.role)) {
       return res.status(403).json({ detail: 'Cannot update another user\'s profile' });
     }
 

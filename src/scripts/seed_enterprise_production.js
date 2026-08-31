@@ -84,8 +84,8 @@ async function seedEnterpriseData() {
       // Admins & Instructors
       {
         name: 'Gohar Hany',
-        email: 'goharhany@gmail.com',
-        role: 'admin',
+        email: process.env.INITIAL_ADMIN_EMAIL || 'goharhany@gmail.com',
+        role: 'superadmin',
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
         enrolled_courses: ['rag-architectures', 'multi-agent-langgraph', 'neural-finetuning'],
         completed_lessons: ['les_rag_01', 'les_rag_02', 'les_rag_03'],
