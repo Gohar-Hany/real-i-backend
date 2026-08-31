@@ -25,7 +25,7 @@ const MOCK_PASSWORD = 'Password123!';
 async function seedEnterpriseData() {
   try {
     const uri = process.env.MONGODB_URI;
-    const dbName = process.env.MONGODB_DATABASE || 'raad-rag';
+    const dbName = process.env.MONGODB_DATABASE || 'reali-db';
 
     console.log(`\n======================================================================`);
     console.log(`🚀 REAL_i ENTERPRISE DATABASE SEEDER & DATA SANITIZER`);

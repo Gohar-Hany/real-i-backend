@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 export const connectDB = async () => {
   try {
     const uri = process.env.MONGODB_URI;
-    const dbName = process.env.MONGODB_DATABASE || 'raad-rag';
+    const dbName = process.env.MONGODB_DATABASE || 'reali-db';
 
     if (!uri) {
       throw new Error('MONGODB_URI is not defined in .env');
