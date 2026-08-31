@@ -2,13 +2,11 @@ import { Router } from 'express';
 import User from '../models/User.js';
 import Submission from '../models/Submission.js';
 import Course from '../models/Course.js';
-import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { authenticate, requireAdmin, requireSuperAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
-const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'goharhany@gmail.com';
-
-// ── GET / — List all users (admin only) ──────────────────────
+// ── GET / — List all users (admin or superadmin only) ─────────
 router.get('/', authenticate, requireAdmin, async (req, res) => {
   try {
     const users = await User.find().select('-password_hash').sort({ created_at: -1 });
@@ -19,12 +17,13 @@ router.get('/', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
-// ── GET /:id — Get single user (admin or self) ──────────────────
+// ── GET /:id — Get single user (admin, superadmin, or self) ────
 router.get('/:id', authenticate, async (req, res) => {
   try {
     const currentUserId = req.user._id.toString();
-    if (req.user.role !== 'admin' && currentUserId !== req.params.id) {
-      return res.status(403).json({ detail: 'Admin access required or you must be the owner' });
+    const isElevated = ['superadmin', 'admin'].includes(req.user.role);
+    if (!isElevated && currentUserId !== req.params.id) {
+      return res.status(403).json({ detail: 'Admin access required or you must be the account owner' });
     }
     const user = await User.findById(req.params.id).select('-password_hash');
     if (!user) return res.status(404).json({ detail: 'User not found' });
@@ -35,20 +34,16 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
-// ── PUT /:id/role — Change user role (super admin only) ──────
-router.put('/:id/role', authenticate, requireAdmin, async (req, res) => {
+// ── PUT /:id/role — Change user role (Super Admin only) ───────
+router.put('/:id/role', authenticate, requireSuperAdmin, async (req, res) => {
   try {
-    if (req.user.email !== SUPER_ADMIN_EMAIL) {
-      return res.status(403).json({ detail: 'Only the super admin can change roles' });
-    }
-
     const { role } = req.body || {};
-    if (!['admin', 'student', 'instructor'].includes(role)) {
-      return res.status(400).json({ detail: "Role must be 'admin', 'student', or 'instructor'" });
+    if (!['superadmin', 'admin', 'student', 'instructor'].includes(role)) {
+      return res.status(400).json({ detail: "Role must be 'superadmin', 'admin', 'instructor', or 'student'" });
     }
 
     if (req.params.id === req.user._id.toString()) {
-      return res.status(400).json({ detail: 'Cannot change your own role' });
+      return res.status(400).json({ detail: 'Cannot change your own role to prevent lockout' });
     }
 
     const user = await User.findByIdAndUpdate(
@@ -171,19 +166,21 @@ router.post('/:id/lessons/:lessonId/toggle', authenticate, async (req, res) => {
 });
 
 // ── DELETE /:id — Delete a user (super admin only) ───────────
-router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
+router.delete('/:id', authenticate, requireSuperAdmin, async (req, res) => {
   try {
-    if (req.user.email !== SUPER_ADMIN_EMAIL) {
-      return res.status(403).json({ detail: 'Only the super admin can delete users' });
-    }
-
     if (req.params.id === req.user._id.toString()) {
       return res.status(400).json({ detail: 'Cannot delete your own account' });
     }
 
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ detail: 'User not found' });
-    
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) return res.status(404).json({ detail: 'User not found' });
+
+    // Safeguard: only another superadmin can delete a superadmin
+    if (targetUser.role === 'superadmin' && req.user.role !== 'superadmin') {
+      return res.status(403).json({ detail: 'Cannot delete a Super Admin account' });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
     await Submission.deleteMany({ student_id: req.params.id });
 
     res.json({ status: 'success', message: 'User deleted successfully' });

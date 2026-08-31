@@ -31,11 +31,12 @@ router.get('/', async (req, res) => {
     const { category, level, search } = req.query;
     if (category && category !== 'All') filter.category = category;
     if (level) filter.level = level;
-    if (search) {
+    if (search && typeof search === 'string' && search.trim()) {
+      const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { tags: { $regex: search, $options: 'i' } },
+        { title: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } },
+        { tags: { $regex: escaped, $options: 'i' } },
       ];
     }
 

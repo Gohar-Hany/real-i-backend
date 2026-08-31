@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   name:          { type: String, required: true, trim: true },
   email:         { type: String, required: true, unique: true, lowercase: true, trim: true },
   password_hash: { type: String, required: true },
-  role:          { type: String, enum: ['admin', 'student', 'instructor'], default: 'student' },
+  role:          { type: String, enum: ['superadmin', 'admin', 'student', 'instructor'], default: 'student' },
   avatar:        { type: String, default: null },
   enrolled_courses: [{ type: String }],               // array of course IDs
   completed_lessons: [{ type: String }],              // array of lesson IDs

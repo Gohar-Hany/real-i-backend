@@ -39,11 +39,31 @@ export const authenticate = async (req, res, next) => {
 };
 
 /**
- * Require admin role. Must be used AFTER `authenticate`.
+ * Require admin or superadmin role. Must be used AFTER `authenticate`.
  */
 export const requireAdmin = (req, res, next) => {
-  if (req.user?.role !== 'admin') {
+  if (!req.user || !['superadmin', 'admin'].includes(req.user.role)) {
     return res.status(403).json({ detail: 'Admin access required' });
+  }
+  next();
+};
+
+/**
+ * Require superadmin role. Must be used AFTER `authenticate`.
+ */
+export const requireSuperAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== 'superadmin') {
+    return res.status(403).json({ detail: 'Super Admin access required' });
+  }
+  next();
+};
+
+/**
+ * Require any of the specified roles.
+ */
+export const requireRole = (roles = []) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return res.status(403).json({ detail: `Access denied. Required role: ${roles.join(', ')}` });
   }
   next();
 };
