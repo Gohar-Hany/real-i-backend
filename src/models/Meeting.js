@@ -26,7 +26,7 @@ const attendanceRecordSchema = new mongoose.Schema({
   participantId: { type: String, required: true },
   name: { type: String, required: true },
   email: { type: String },
-  role: { type: String, enum: ['instructor', 'student', 'guest'], default: 'student' },
+  role: { type: String, enum: ['superadmin', 'admin', 'moderator', 'instructor', 'student', 'guest'], default: 'student' },
   joinTime: { type: Date, default: Date.now },
   leaveTime: { type: Date },
   durationSeconds: { type: Number, default: 0 },
