@@ -84,17 +84,26 @@ router.get('/', authenticate, async (req, res) => {
       const userIdStr = req.user._id.toString();
       const userEmail = (req.user.email || '').toLowerCase();
 
-      const enrollmentFilter = {
-        $or: [
-          { courseId: { $in: enrolledList } },
-          { targetCohorts: { $in: enrolledList } },
-          { 'attendance.userId': req.user._id },
-          { 'attendance.email': userEmail },
-          { courseId: { $in: [null, ''] } },
-          { courseId: { $exists: false } }
-        ]
-      };
-      filter = { ...filter, ...enrollmentFilter };
+      if (enrolledList.length === 0) {
+        // Student not enrolled in any course — only match if explicitly invited by attendance
+        const enrollmentFilter = {
+          $or: [
+            { 'attendance.userId': req.user._id },
+            { 'attendance.email': userEmail }
+          ]
+        };
+        filter = { ...filter, ...enrollmentFilter };
+      } else {
+        const enrollmentFilter = {
+          $or: [
+            { courseId: { $in: enrolledList } },
+            { targetCohorts: { $in: enrolledList } },
+            { 'attendance.userId': req.user._id },
+            { 'attendance.email': userEmail }
+          ]
+        };
+        filter = { ...filter, ...enrollmentFilter };
+      }
     }
 
     // Sort: 'live' meetings first, then upcoming 'scheduled', then 'ended'

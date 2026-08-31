@@ -18,6 +18,14 @@ router.get('/', authenticate, async (req, res) => {
       filter.date = { $gte: startDate, $lte: endDate };
     }
     const customEvents = await Event.find(filter).sort({ date: 1 });
+    let filteredCustomEvents = customEvents;
+    if (req.user.role === 'student') {
+      const userEnrolled = req.user.enrolled_courses || [];
+      filteredCustomEvents = customEvents.filter(e => {
+        if (!e.course_id) return true; // Platform-wide event
+        return userEnrolled.includes(e.course_id);
+      });
+    }
 
     // 2. Auto-generate events from published assessments with dates
     let assessmentFilter = { status: 'published' };
@@ -78,7 +86,7 @@ router.get('/', authenticate, async (req, res) => {
 
     // 3. Combine and sort
     const allEvents = [
-      ...customEvents.map(e => ({ ...e.toJSON(), is_auto: false })),
+      ...filteredCustomEvents.map(e => ({ ...e.toJSON(), is_auto: false })),
       ...filteredAssessmentEvents,
     ].sort((a, b) => new Date(a.date) - new Date(b.date));
 
