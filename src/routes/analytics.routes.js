@@ -120,10 +120,17 @@ router.get('/students', authenticate, requireAdmin, async (req, res) => {
 // ── GET /courses/:id — Per-course analytics (admin only) ─────
 router.get('/courses/:id', authenticate, requireAdmin, async (req, res) => {
   try {
-    const course = await Course.findOne({ project_id: req.params.id });
+    const isValidObjectId = String(req.params.id).match(/^[0-9a-fA-F]{24}$/);
+    const course = await Course.findOne({
+      $or: [
+        { project_id: req.params.id },
+        { _id: isValidObjectId ? req.params.id : null }
+      ].filter(Boolean)
+    });
     if (!course) return res.status(404).json({ detail: 'Course not found' });
 
-    const assessments = await Assessment.find({ course_id: req.params.id });
+    const courseAliases = [course.project_id, course._id.toString()].filter(Boolean);
+    const assessments = await Assessment.find({ course_id: { $in: courseAliases } });
     const assessmentIds = assessments.map(a => a._id);
 
     const submissions = await Submission.find({
@@ -141,7 +148,7 @@ router.get('/courses/:id', authenticate, requireAdmin, async (req, res) => {
       totalAssessments: assessments.length,
       totalSubmissions,
       avgScore,
-      enrolledStudents: course.enrolled_students.length,
+      enrolledStudents: (course.enrolled_students || []).length,
     });
   } catch (err) {
     res.status(500).json({ detail: err.message });
